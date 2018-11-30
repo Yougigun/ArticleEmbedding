@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[72]:
+# In[2]:
 
 
 from ArticlesRep import MeanSimilarityoneindustry,MeanSimilaritytwoindustry #common function
@@ -47,7 +47,7 @@ list_industry=["水泥","食品飲料","石化","紡織","電機機械","電器�
               ]
 
 
-# In[73]:
+# In[3]:
 
 
 from keras.layers import Dense,Lambda,Input,Dot,Add,Subtract,GaussianDropout
@@ -58,7 +58,7 @@ from keras import backend as K
 
 # ### Denoising Autoencoder with weak supervision
 
-# In[94]:
+# In[4]:
 
 
 # custommed function
@@ -83,7 +83,7 @@ def test(inputs):
     return x
 
 
-# In[95]:
+# In[5]:
 
 
 x=Input(shape=(5,))
@@ -93,7 +93,7 @@ x=np.arange(2*5).reshape((2,5))
 model.predict(x)
 
 
-# In[197]:
+# In[42]:
 
 
 K.clear_session()
@@ -107,7 +107,7 @@ np.random.seed(100)
 #parameter setting
 BOW_dim=20000
 DR_dim=100
-loss_weights=[1,1,1,1]
+loss_weights=[1,1,1,2]
 
 ##Encoder
 x=Input((BOW_dim,),name="encoder_input")
@@ -181,104 +181,29 @@ Tri_AutoEncoder.summary()
 
 # ## Load Data
 
-# In[6]:
-
-
-# Data=np.load("D:3.AutoencoderForArticle/BOW_binary_v01.npy")
-
-
-# In[7]:
-
-
-# with open("D:3.AutoencoderForArticle/train_dict_collect_small_industry","rb") as f:
-#     train_dict_collect_small_industry=pickle.load(f)
-# with open("D:3.AutoencoderForArticle/train_dict_small_triplet_v02","rb") as f:
-#     train_dict_small_triplet_v02=pickle.load(f)
-# with open("D:3.AutoencoderForArticle/test_dict_collect_small_industry","rb") as f:
-#     test_dict_collect_small_industry=pickle.load(f)
-# with open("D:3.AutoencoderForArticle/test_dict_small_triplet_v02","rb") as f:
-#     test_dict_small_triplet_v02=pickle.load(f)
-
-
-# In[8]:
-
-
-#train treiplet
-for i,k in enumerate(train_dict_small_triplet_v02):
-    if i==0:train_tripletindex=train_dict_small_triplet_v02[k]
-    else:train_tripletindex=np.concatenate((train_tripletindex,train_dict_small_triplet_v02[k]),axis=0)
-
-
 # In[9]:
 
 
-len(train_tripletindex)
+Data=np.load("D:3.AutoencoderForArticle/BOW_binary_v01.npy")
 
 
 # In[10]:
 
 
-total=0
-for k in train_dict_small_triplet_v02:
-    total+=len(train_dict_small_triplet_v02[k])
-total
+with open("D:3.AutoencoderForArticle/train_dict_collect_small_industry","rb") as f:
+    train_dict_collect_small_industry=pickle.load(f)
 
 
 # In[11]:
 
 
-#test treiplet
-for i,k in enumerate(test_dict_small_triplet_v02):
-    if i==0:test_tripletindex=test_dict_small_triplet_v02[k]
-    else:test_tripletindex=np.concatenate((test_tripletindex,test_dict_small_triplet_v02[k]),axis=0)
-
-
-# In[12]:
-
-
-len(test_tripletindex)
-
-
-# In[13]:
-
-
-total=0
-for k in test_dict_small_triplet_v02:
-    total+=len(test_dict_small_triplet_v02[k])
-total
-
-
-# In[ ]:
-
-
-# %%time
-# np.random.permutation(train_tripletindex)
-
-
-# In[ ]:
-
-
-# %%time
-# np.random.shuffle(train_tripletindex)
-
-
-# In[ ]:
-
-
-# %%time
-# pick=np.random.permutation(181054122)
-# train_tripletindex[pick]
-
-
-# In[20]:
-
-
-get_ipython().run_cell_magic('time', '', 'b=32\nbatch_index = train_tripletindex[0 * b:(0 + 1) * b]\npprint(batch_index)')
+with open("D:3.AutoencoderForArticle/test_dict_collect_small_industry","rb") as f:
+    test_dict_collect_small_industry=pickle.load(f)
 
 
 # ## Data generator
 
-# In[139]:
+# In[13]:
 
 
 class DataGenerator(Sequence):
@@ -288,104 +213,158 @@ class DataGenerator(Sequence):
         pick=np.random.permutation(len(self.tripletindex))
         self.tripletindex= self.tripletindex[pick]
         self.batch_size = batch_size
+        self.Data=Data
 
     def __len__(self):
-#         return int(np.ceil(self.tripletindex.shape[0] / float(self.batch_size)))
-        return 100
+         return int(np.ceil(self.tripletindex.shape[0] / float(self.batch_size)))
+#         return 1
     def __getitem__(self, idx):
         batch_index = self.tripletindex[idx * self.batch_size:(idx + 1) * self.batch_size]
-        batch_anchor = Data[batch_index[:,0]]
-        batch_positive = Data[batch_index[:,1]]
-        batch_negative = Data[batch_index[:,2]]
+        batch_anchor = self.Data[batch_index[:,0]]
+        batch_positive = self.Data[batch_index[:,1]]
+        batch_negative = self.Data[batch_index[:,2]]
         tripletloss=np.zeros((batch_negative.shape[0],1))
         return [batch_anchor,batch_positive,batch_negative],[batch_anchor,batch_positive,batch_negative,tripletloss]
     def on_epoch_end(self):
         """Method called at the end of every epoch.
         """
+        pick=np.random.permutation(len(self.tripletindex))
+        self.tripletindex= self.tripletindex[pick]
         
+
+
+# In[14]:
+
+
+class HardTriGenerator(Sequence):
+
+    def __init__(self, dict_id_news,Data, P=4,K=8):
+        self.dict_id_news=dict_id_news
+        self.industry=np.asarray(list(dict_id_news.keys()))
 #         pick=np.random.permutation(len(self.tripletindex))
 #         self.tripletindex= self.tripletindex[pick]
+        self.P=P
+        self.K=K
+        self.Data=Data
+
+    def __len__(self):
+        return int(np.ceil(len(self.industry) / self.P))
+#         return 1
+    def __getitem__(self, idx):
+        indusrty= self.industry[idx*self.P:(idx+1)*self.P]
+        small_dict_id_news={i:np.random.choice(self.dict_id_news[i],size=self.K,replace=False) for i in indusrty}
+        dict_small_triplet=dict()
+        for k in small_dict_id_news:
+            poslist=small_dict_id_news[k]
+            poslen=len(poslist)
+            neglist=[]
+            for j in small_dict_id_news:
+                if k!=j:neglist+=train_dict_collect_small_industry[j]
+                neglen=len(neglist)
+            indarray=np.zeros((int(poslen*(poslen-1)*neglen/2),3),dtype=int)
+            i=0
+            for ip1_,a in enumerate(poslist):
+                for ip2_,p in enumerate(poslist[ip1_+1:]):
+                    for in_,n in enumerate(neglist):
+        #                 print(p1,p2,n)
+                        indarray[i,0]=a
+                        indarray[i,1]=p
+                        indarray[i,2]=n
+                        i+=1
+        #                 break
+        #             break
+        #         break
+            dict_small_triplet[k]=indarray            
+        for i,k in enumerate(dict_small_triplet):
+            if i==0:tripletindex=dict_small_triplet[k]
+            else:tripletindex=np.concatenate((tripletindex,dict_small_triplet[k]),axis=0)   
+        batch_anchor=self.Data[tripletindex[:,0]]
+        batch_positive=self.Data[tripletindex[:,1]]
+        batch_negative=self.Data[tripletindex[:,2]]
+        tripletloss=np.zeros((batch_negative.shape[0],1))    
         
+        return [batch_anchor,batch_positive,batch_negative],[batch_anchor,batch_positive,batch_negative,tripletloss]
+    def on_epoch_end(self):
+        """Method called at the end of every epoch.
+        """
+        self.industry=np.random.permutation(self.industry)       
 
 
-# In[140]:
+# In[50]:
 
 
-get_ipython().run_cell_magic('time', '', '# train0=np.random.randint(0,2,(4,12000))\n# train1=np.random.randint(0,2,(4,12000))\n# train2=np.random.randint(0,2,(4,12000))\n# labels=np.ones((4,1))\n\n\n#setup\n\nbatch_size=32\n#instantiate generator\ntraingenerator=DataGenerator(tripletindex=train_tripletindex,\n                             Data=Data,\n                             batch_size=batch_size)\ntestgenerator=DataGenerator(tripletindex=test_tripletindex,\n                            Data=Data,\n                            batch_size=batch_size)')
+#setup
+
+#instantiate generator
+traingenerator=HardTriGenerator(dict_id_news=train_dict_collect_small_industry,
+                                Data=Data,
+                                P=3,
+                                K=3,
+                               )
+testgenerator=HardTriGenerator(dict_id_news=test_dict_collect_small_industry,
+                               Data=Data,P=3,K=3,
+                              )
 
 
-# In[173]:
+# In[67]:
 
 
-get_ipython().run_cell_magic('time', '', '#setup\nepochs=200\n# steps_per_epoch=5\n#train\nHistory=Tri_AutoEncoder.fit_generator(generator=traingenerator,\n                                      shuffle=True,\n                                      epochs=epochs,\n#                                       steps_per_epoch=steps_per_epoch,\n                                      validation_data=testgenerator,\n                                      verbose=2,\n                                      workers=3,use_multiprocessing=False,\n                                    \n                                     )')
+Tri_AutoEncoder=load_model("Tri_AutoEncoder.initial.h5",custom_objects={"losspassfunction":losspassfunction})
 
 
-# In[186]:
+# ## Train
+
+# In[68]:
 
 
+#setup
+epochs=200
+# steps_per_epoch=5
+#train
+History=Tri_AutoEncoder.fit_generator(generator=traingenerator,
+#                                       shuffle=True,
+                                      epochs=epochs,
+#                                       steps_per_epoch=steps_per_epoch,
+                                      validation_data=testgenerator,
+                                      verbose=2,
+                                      workers=1,use_multiprocessing=False,
+                                    
+                                     )
+#save model
 Tri_AutoEncoder.save("Tri_AutoEncoder_trained.h5")
 encoder.save("encoder_trained.h5")
 decoder.save("decoder_trained.h5")
 
 
-# In[175]:
+# In[71]:
 
 
 df=pd.DataFrame(History.history)
-
-
-# In[188]:
-
-
 df.to_hdf("history.h5",key="data")
 
 
-# In[189]:
-
-
-# df=pd.read_hdf("history.h5")
-
-
-# In[190]:
-
-
-# df[["loss","val_loss"]].plot(subplots=False,layout=(1,3),figsize=(18,6))
-
-
-# In[191]:
+# In[74]:
 
 
 df[["loss","val_loss"]].plot(subplots=True,layout=(1,3),figsize=(18,6))
 
 
-# In[192]:
+# In[75]:
 
 
 df[["triplet_loss","val_triplet_loss"]].plot(subplots=True,layout=(1,3),figsize=(18,6))
 
 
-# In[193]:
+# In[76]:
 
 
 df[["anchor_loss","positive_loss","negative_loss"]].plot(subplots=True,layout=(1,3),figsize=(18,6))
 
 
-# In[194]:
+# In[77]:
 
 
 df[["val_anchor_loss","val_positive_loss","val_negative_loss"]].plot(subplots=True,layout=(1,3),figsize=(18,6))
-
-
-# In[195]:
-
-
-df.to_hdf("history.h5",key="data")
-
-
-# In[196]:
-
-
-pd.read_hdf("history.h5")
 
 
 # In[199]:
