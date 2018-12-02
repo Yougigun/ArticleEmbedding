@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[2]:
+# In[4]:
 
 
 from ArticlesRep import MeanSimilarityoneindustry,MeanSimilaritytwoindustry #common function
@@ -47,7 +47,7 @@ list_industry=["水泥","食品飲料","石化","紡織","電機機械","電器�
               ]
 
 
-# In[3]:
+# In[5]:
 
 
 from keras.layers import Dense,Lambda,Input,Dot,Add,Subtract,GaussianDropout
@@ -58,7 +58,7 @@ from keras import backend as K
 
 # ### Denoising Autoencoder with weak supervision
 
-# In[4]:
+# In[6]:
 
 
 # custommed function
@@ -83,7 +83,7 @@ def test(inputs):
     return x
 
 
-# In[5]:
+# In[7]:
 
 
 x=Input(shape=(5,))
@@ -93,7 +93,7 @@ x=np.arange(2*5).reshape((2,5))
 model.predict(x)
 
 
-# In[42]:
+# In[8]:
 
 
 K.clear_session()
@@ -203,7 +203,7 @@ with open("D:3.AutoencoderForArticle/test_dict_collect_small_industry","rb") as 
 
 # ## Data generator
 
-# In[13]:
+# In[12]:
 
 
 class DataGenerator(Sequence):
@@ -233,7 +233,7 @@ class DataGenerator(Sequence):
         
 
 
-# In[14]:
+# In[13]:
 
 
 class HardTriGenerator(Sequence):
@@ -290,7 +290,7 @@ class HardTriGenerator(Sequence):
         self.industry=np.random.permutation(self.industry)       
 
 
-# In[50]:
+# In[14]:
 
 
 #setup
@@ -306,28 +306,40 @@ testgenerator=HardTriGenerator(dict_id_news=test_dict_collect_small_industry,
                               )
 
 
-# In[67]:
+# ## Callback function
+
+# In[24]:
 
 
 Tri_AutoEncoder=load_model("Tri_AutoEncoder.initial.h5",custom_objects={"losspassfunction":losspassfunction})
 
 
+# In[25]:
+
+
+from keras.callbacks import TerminateOnNaN,ModelCheckpoint,TensorBoard
+checkpointer = ModelCheckpoint(filepath='bestmodel.hdf5', verbose=0, save_best_only=True,period=10)
+tensorboard=TensorBoard()
+
+
 # ## Train
 
-# In[68]:
+# In[26]:
 
 
 #setup
-epochs=200
+epochs=6000
 # steps_per_epoch=5
 #train
-History=Tri_AutoEncoder.fit_generator(generator=traingenerator,
+History=Tri_AutoEncoder.fit_generator(callbacks=[checkpointer,tensorboard],
+                                      generator=traingenerator,
 #                                       shuffle=True,
                                       epochs=epochs,
 #                                       steps_per_epoch=steps_per_epoch,
                                       validation_data=testgenerator,
                                       verbose=2,
                                       workers=1,use_multiprocessing=False,
+                                      
                                     
                                      )
 #save model
@@ -336,40 +348,33 @@ encoder.save("encoder_trained.h5")
 decoder.save("decoder_trained.h5")
 
 
-# In[71]:
+# In[27]:
 
 
 df=pd.DataFrame(History.history)
 df.to_hdf("history.h5",key="data")
 
 
-# In[74]:
+# In[28]:
 
 
 df[["loss","val_loss"]].plot(subplots=True,layout=(1,3),figsize=(18,6))
 
 
-# In[75]:
+# In[29]:
 
 
 df[["triplet_loss","val_triplet_loss"]].plot(subplots=True,layout=(1,3),figsize=(18,6))
 
 
-# In[76]:
+# In[30]:
 
 
 df[["anchor_loss","positive_loss","negative_loss"]].plot(subplots=True,layout=(1,3),figsize=(18,6))
 
 
-# In[77]:
+# In[31]:
 
 
 df[["val_anchor_loss","val_positive_loss","val_negative_loss"]].plot(subplots=True,layout=(1,3),figsize=(18,6))
-
-
-# In[199]:
-
-
-import keras
-print(keras.__version__)
 
