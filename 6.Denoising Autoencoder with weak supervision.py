@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[4]:
+# In[1]:
 
 
 from ArticlesRep import MeanSimilarityoneindustry,MeanSimilaritytwoindustry #common function
@@ -47,7 +47,7 @@ list_industry=["水泥","食品飲料","石化","紡織","電機機械","電器�
               ]
 
 
-# In[5]:
+# In[2]:
 
 
 from keras.layers import Dense,Lambda,Input,Dot,Add,Subtract,GaussianDropout
@@ -58,7 +58,7 @@ from keras import backend as K
 
 # ### Denoising Autoencoder with weak supervision
 
-# In[6]:
+# In[3]:
 
 
 # custommed function
@@ -83,7 +83,7 @@ def test(inputs):
     return x
 
 
-# In[7]:
+# In[4]:
 
 
 x=Input(shape=(5,))
@@ -93,7 +93,7 @@ x=np.arange(2*5).reshape((2,5))
 model.predict(x)
 
 
-# In[8]:
+# In[5]:
 
 
 K.clear_session()
@@ -181,20 +181,20 @@ Tri_AutoEncoder.summary()
 
 # ## Load Data
 
-# In[9]:
+# In[6]:
 
 
 Data=np.load("D:3.AutoencoderForArticle/BOW_binary_v01.npy")
 
 
-# In[10]:
+# In[7]:
 
 
 with open("D:3.AutoencoderForArticle/train_dict_collect_small_industry","rb") as f:
     train_dict_collect_small_industry=pickle.load(f)
 
 
-# In[11]:
+# In[8]:
 
 
 with open("D:3.AutoencoderForArticle/test_dict_collect_small_industry","rb") as f:
@@ -203,7 +203,7 @@ with open("D:3.AutoencoderForArticle/test_dict_collect_small_industry","rb") as 
 
 # ## Data generator
 
-# In[12]:
+# In[9]:
 
 
 class DataGenerator(Sequence):
@@ -233,12 +233,12 @@ class DataGenerator(Sequence):
         
 
 
-# In[13]:
+# In[30]:
 
 
 class HardTriGenerator(Sequence):
 
-    def __init__(self, dict_id_news,Data, P=4,K=8):
+    def __init__(self, dict_id_news,Data, P=3,K=3):
         self.dict_id_news=dict_id_news
         self.industry=np.asarray(list(dict_id_news.keys()))
 #         pick=np.random.permutation(len(self.tripletindex))
@@ -259,18 +259,19 @@ class HardTriGenerator(Sequence):
             poslen=len(poslist)
             neglist=[]
             for j in small_dict_id_news:
-                if k!=j:neglist+=train_dict_collect_small_industry[j]
+                if k!=j:neglist+=list(small_dict_id_news[j])
                 neglen=len(neglist)
-            indarray=np.zeros((int(poslen*(poslen-1)*neglen/2),3),dtype=int)
+            indarray=np.zeros((int(poslen*(poslen-1)*neglen),3),dtype=int)
             i=0
             for ip1_,a in enumerate(poslist):
-                for ip2_,p in enumerate(poslist[ip1_+1:]):
-                    for in_,n in enumerate(neglist):
-        #                 print(p1,p2,n)
-                        indarray[i,0]=a
-                        indarray[i,1]=p
-                        indarray[i,2]=n
-                        i+=1
+                for ip2_,p in enumerate(poslist):
+                    if ip1_!=ip2_:
+                        for in_,n in enumerate(neglist):
+        #                   print(p1,p2,n)
+                            indarray[i,0]=a
+                            indarray[i,1]=p
+                            indarray[i,2]=n
+                            i+=1
         #                 break
         #             break
         #         break
@@ -290,7 +291,7 @@ class HardTriGenerator(Sequence):
         self.industry=np.random.permutation(self.industry)       
 
 
-# In[14]:
+# In[68]:
 
 
 #setup
@@ -299,36 +300,40 @@ class HardTriGenerator(Sequence):
 traingenerator=HardTriGenerator(dict_id_news=train_dict_collect_small_industry,
                                 Data=Data,
                                 P=3,
-                                K=3,
+                                K=8,
                                )
 testgenerator=HardTriGenerator(dict_id_news=test_dict_collect_small_industry,
-                               Data=Data,P=3,K=3,
+                               Data=Data,P=3,K=8,
                               )
+
+
+# In[69]:
+
+
+for _,i in enumerate(traingenerator):
+    print(i[0][2].shape)
+    break
 
 
 # ## Callback function
 
-# In[24]:
-
-
-Tri_AutoEncoder=load_model("Tri_AutoEncoder.initial.h5",custom_objects={"losspassfunction":losspassfunction})
-
-
-# In[25]:
+# In[71]:
 
 
 from keras.callbacks import TerminateOnNaN,ModelCheckpoint,TensorBoard
 checkpointer = ModelCheckpoint(filepath='bestmodel.hdf5', verbose=0, save_best_only=True,period=10)
-tensorboard=TensorBoard()
+tensorboard=TensorBoard(log_dir="./logs/P=3_K=8")
 
 
 # ## Train
 
-# In[26]:
+# In[72]:
 
 
+#initial
+Tri_AutoEncoder=load_model("Tri_AutoEncoder.initial.h5",custom_objects={"losspassfunction":losspassfunction})
 #setup
-epochs=6000
+epochs=3000
 # steps_per_epoch=5
 #train
 History=Tri_AutoEncoder.fit_generator(callbacks=[checkpointer,tensorboard],
@@ -348,32 +353,43 @@ encoder.save("encoder_trained.h5")
 decoder.save("decoder_trained.h5")
 
 
-# In[27]:
+# In[73]:
+
+
+# #partial fit
+# Tri_AutoEncoder=load_model("Tri_AutoEncoder.initial.h5",custom_objects={"losspassfunction":losspassfunction})
+# epoch=1
+# for i in range(epoch):
+#     for i in traingenerator:
+#         Tri_AutoEncoder.train_on_batch(x=i[0],y=i[1])
+
+
+# In[74]:
 
 
 df=pd.DataFrame(History.history)
 df.to_hdf("history.h5",key="data")
 
 
-# In[28]:
+# In[75]:
 
 
 df[["loss","val_loss"]].plot(subplots=True,layout=(1,3),figsize=(18,6))
 
 
-# In[29]:
+# In[76]:
 
 
 df[["triplet_loss","val_triplet_loss"]].plot(subplots=True,layout=(1,3),figsize=(18,6))
 
 
-# In[30]:
+# In[77]:
 
 
 df[["anchor_loss","positive_loss","negative_loss"]].plot(subplots=True,layout=(1,3),figsize=(18,6))
 
 
-# In[31]:
+# In[78]:
 
 
 df[["val_anchor_loss","val_positive_loss","val_negative_loss"]].plot(subplots=True,layout=(1,3),figsize=(18,6))
