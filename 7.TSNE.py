@@ -422,9 +422,3 @@ for i,k in enumerate(set(c)):
     plt.scatter(x = intermediates_tsne[pick,0], y=intermediates_tsne[pick,1],c=color[i],marker=marker[i],label=k,)
 plt.legend(fontsize=12)
 
-
-# In[204]:
-
-
-df=pd.DataFrame({"X":intermediates_tsne[:,0],"Y":intermediates_tsne[:,1],"Z":color})
-
