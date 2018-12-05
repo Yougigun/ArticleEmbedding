@@ -29,22 +29,25 @@ from sklearn.metrics.pairwise import cosine_similarity
 # env="TagBased"
 
 import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning,)
+warnings.simplefilter(action='ignore', category=FutureWarning)
 # %matplotlib inline
 
 import re
-
+import sys
 from pprint import pprint
 #coding:utf-8
-import matplotlib.pyplot as plt
-plt.rcParams['font.sans-serif']=['SimHei'] #用来正常显示中文标签
-plt.rcParams['axes.unicode_minus']=False #用来正常显示负号
-#有中文出现的情况，需要u'内容'
+
+#solved chinese display in matplotlib
+from pylab import mpl
+mpl.rcParams["font.family"] = 'DFKai-sb' 
+mpl.rcParams['axes.unicode_minus'] = False
+
 list_industry=["水泥","食品飲料","石化","紡織","電機機械","電器電纜","化學工業",
                "建材居家用品","造紙","鋼鐵金屬","車輛相關","科技相關","營建地產","運輸","觀光休閒娛樂",
                "金融相關","百貨通路","公用事業","控股","生技醫療保健","農林漁牧","航天軍工","能源","傳播出版","綜合",
                "傳產其他","其他","金屬礦採選",
               ]
+element="氫氦鋰鈹硼碳氮氧氟氖鈉鎂鋁矽磷硫氯氬鉀鈣鈧鈦釩鉻錳鐵鈷鎳銅鋅鎵鍺砷硒溴氪銣鍶銀鎘銦錫銻碲碘氙銫鋇鉑金汞鉈鉛鉍釙氡鍅鐳"
 
 
 # In[2]:
@@ -93,7 +96,7 @@ x=np.arange(2*5).reshape((2,5))
 model.predict(x)
 
 
-# In[5]:
+# In[31]:
 
 
 K.clear_session()
@@ -105,7 +108,8 @@ np.random.seed(100)
 # dense=Dense(units=12000,activation="sigmoid",name="Dense1")
 ###############
 #parameter setting
-BOW_dim=20000
+path="Models/Model1"
+BOW_dim=19404
 DR_dim=100
 loss_weights=[1,1,1,2]
 
@@ -113,13 +117,15 @@ loss_weights=[1,1,1,2]
 x=Input((BOW_dim,),name="encoder_input")
 # y=Lambda(noisefunction,name="noisefunction")
 y=GaussianDropout(rate=0.2,name="noise")(x)
-# y=Dense(30,use_bias=False)(y)
-y=Dense(units=DR_dim,activation="sigmoid",name="Dense",use_bias=False)(y)
+# y=Dense(units=2000,activation="sigmoid",name="Dense_1")(y)
+y=Dense(units=DR_dim,activation="sigmoid",name="Dense_2",use_bias=False)(y)
 encoder=Model(x,y,name="encoder")
 
 ##Decoder
 x=Input((DR_dim,),name="input") 
-y=Dense(units=20000,activation="sigmoid",name="Dense")(x)
+y=x
+# y=Dense(units=2000,activation="sigmoid",use_bias=False,name="Dense_1")(y)
+y=Dense(units=BOW_dim,activation="sigmoid",name="Dense_2")(y)
 decoder=Model(x,y,name="decoder")
 
 ##Tripletloss
@@ -158,21 +164,21 @@ Tri_AutoEncoder.compile(optimizer="adam",
                         loss_weights=loss_weights
                        )
 #save initial model
-Tri_AutoEncoder.save("Tri_AutoEncoder.initial.h5")
-encoder.save("encoder.initial.h5")
-decoder.save("decoder.initial.h5")
+Tri_AutoEncoder.save("{}/Tri_AutoEncoder.initial.h5".format(path))
+# encoder.save("encoder.initial.h5")
+# decoder.save("decoder.initial.h5")
 #plot
-plot_model(Tri_AutoEncoder,to_file="Tri_DenoiseAutoEncoder.png")
-plot_model(encoder,to_file="encoder.png")
-plot_model(decoder,to_file="decoder.png")
+plot_model(Tri_AutoEncoder,to_file="{}/Tri_DenoiseAutoEncoder.png".format(path))
+plot_model(encoder,to_file="{}/encoder.png".format(path))
+plot_model(decoder,to_file="{}/decoder.png".format(path))
 # Open the file to record
-with open('Tri_AutoEencoderncoder.summary.txt','w') as f:
+with open('{}/Tri_AutoEencoderncoder.summary.txt'.format(path),'w') as f:
     # Pass the file handle in as a lambda function to make it callable
     Tri_AutoEncoder.summary(print_fn=lambda x: f.write("    "+x + '\n'))
-with open('encoder.summary.txt','w') as f:
+with open('{}/encoder.summary.txt'.format(path),'w') as f:
     # Pass the file handle in as a lambda function to make it callable
     encoder.summary(print_fn=lambda x: f.write("    "+x + '\n'))
-with open('decoder.summary.txt','w') as f:
+with open('{}/decoder.summary.txt'.format(path),'w') as f:
     # Pass the file handle in as a lambda function to make it callable
     decoder.summary(print_fn=lambda x: f.write("    "+x + '\n'))
 
@@ -181,20 +187,20 @@ Tri_AutoEncoder.summary()
 
 # ## Load Data
 
-# In[6]:
+# In[9]:
 
 
-Data=np.load("D:3.AutoencoderForArticle/BOW_binary_v01.npy")
+Data=np.load("D:3.AutoencoderForArticle/BOW_binary_v02.npy")
 
 
-# In[7]:
+# In[10]:
 
 
 with open("D:3.AutoencoderForArticle/train_dict_collect_small_industry","rb") as f:
     train_dict_collect_small_industry=pickle.load(f)
 
 
-# In[8]:
+# In[11]:
 
 
 with open("D:3.AutoencoderForArticle/test_dict_collect_small_industry","rb") as f:
@@ -203,7 +209,7 @@ with open("D:3.AutoencoderForArticle/test_dict_collect_small_industry","rb") as 
 
 # ## Data generator
 
-# In[9]:
+# In[32]:
 
 
 class DataGenerator(Sequence):
@@ -233,7 +239,7 @@ class DataGenerator(Sequence):
         
 
 
-# In[30]:
+# In[33]:
 
 
 class HardTriGenerator(Sequence):
@@ -291,7 +297,7 @@ class HardTriGenerator(Sequence):
         self.industry=np.random.permutation(self.industry)       
 
 
-# In[68]:
+# In[34]:
 
 
 #setup
@@ -307,7 +313,7 @@ testgenerator=HardTriGenerator(dict_id_news=test_dict_collect_small_industry,
                               )
 
 
-# In[69]:
+# In[35]:
 
 
 for _,i in enumerate(traingenerator):
@@ -317,26 +323,31 @@ for _,i in enumerate(traingenerator):
 
 # ## Callback function
 
-# In[71]:
+# In[41]:
 
 
 from keras.callbacks import TerminateOnNaN,ModelCheckpoint,TensorBoard
-checkpointer = ModelCheckpoint(filepath='bestmodel.hdf5', verbose=0, save_best_only=True,period=10)
-tensorboard=TensorBoard(log_dir="./logs/P=3_K=8")
+checkpointer = ModelCheckpoint(filepath='{}/bestmodel.hdf5'.format(path), verbose=0, save_best_only=True,period=10)
+regularsave = ModelCheckpoint(filepath="{}".format(path)+'/regular/weights.{epoch:02d}.hdf5',
+                              save_weights_only=True, 
+                              verbose=0,
+                              save_best_only=False,period=50)
+logname="model"
+tensorboard=TensorBoard(log_dir="./logs/{}".format(logname))
 
 
 # ## Train
 
-# In[72]:
+# In[42]:
 
 
 #initial
-Tri_AutoEncoder=load_model("Tri_AutoEncoder.initial.h5",custom_objects={"losspassfunction":losspassfunction})
+Tri_AutoEncoder=load_model("{}/Tri_AutoEncoder.initial.h5".format(path),custom_objects={"losspassfunction":losspassfunction})
 #setup
-epochs=3000
+epochs=1000
 # steps_per_epoch=5
 #train
-History=Tri_AutoEncoder.fit_generator(callbacks=[checkpointer,tensorboard],
+History=Tri_AutoEncoder.fit_generator(callbacks=[checkpointer,tensorboard,regularsave],
                                       generator=traingenerator,
 #                                       shuffle=True,
                                       epochs=epochs,
@@ -348,12 +359,11 @@ History=Tri_AutoEncoder.fit_generator(callbacks=[checkpointer,tensorboard],
                                     
                                      )
 #save model
-Tri_AutoEncoder.save("Tri_AutoEncoder_trained.h5")
-encoder.save("encoder_trained.h5")
-decoder.save("decoder_trained.h5")
+Tri_AutoEncoder.save("{}/Tri_AutoEncoder_trained.h5".format(path))
+Tri_AutoEncoder.save_weights("{}/weights.h5".format(path))
 
 
-# In[73]:
+# In[ ]:
 
 
 # #partial fit
@@ -364,32 +374,32 @@ decoder.save("decoder_trained.h5")
 #         Tri_AutoEncoder.train_on_batch(x=i[0],y=i[1])
 
 
-# In[74]:
+# In[45]:
 
 
 df=pd.DataFrame(History.history)
-df.to_hdf("history.h5",key="data")
+df.to_hdf("{}/history.h5".format(path),key="data")
 
 
-# In[75]:
+# In[46]:
 
 
 df[["loss","val_loss"]].plot(subplots=True,layout=(1,3),figsize=(18,6))
 
 
-# In[76]:
+# In[47]:
 
 
 df[["triplet_loss","val_triplet_loss"]].plot(subplots=True,layout=(1,3),figsize=(18,6))
 
 
-# In[77]:
+# In[48]:
 
 
 df[["anchor_loss","positive_loss","negative_loss"]].plot(subplots=True,layout=(1,3),figsize=(18,6))
 
 
-# In[78]:
+# In[49]:
 
 
 df[["val_anchor_loss","val_positive_loss","val_negative_loss"]].plot(subplots=True,layout=(1,3),figsize=(18,6))
