@@ -12,3 +12,6 @@
 Model
 bfg.jar
 .ipynb_checkpoints
+tsnefig/
+Models/
+logs/
