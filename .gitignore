@@ -12,28 +12,10 @@
 
 bfg.jar
 .ipynb_checkpoints
-<<<<<<< HEAD
 tsnefig/
 Models/
 logs/
-=======
-decoder.initial.h5
-encoder.initial.h5
-Tri_AutoEncoder.initial.h5
-Model/encoder_trained.h5
-Model/Tri_AutoEncoder_trained.h5
-Model/history.h5
-Model/decoder_trained.h5
-Model/bestmodel.hdf5
-weight.h5
-weights.h5
-encoder_trained.h5
-decoder_trained.h5
-bestmodel.hdf5
-Tri_AutoEncoder_trained.h5
-logs/P=3_K=8_model2_onehot2/events.out.tfevents.1543987093.GARYYU-B35I7
-logs/
-tsnefig/
-Models/
-Model/
->>>>>>> ModelTraining
+*.h5
+*.hdf5
+*.png
+*.csv
