@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[1]:
+# In[ ]:
 
 
 from ArticlesRep import MeanSimilarityoneindustry,MeanSimilaritytwoindustry #common function
@@ -52,49 +52,49 @@ list_industry=["水泥","食品飲料","石化","紡織","電機機械","電器�
 element="氫氦鋰鈹硼碳氮氧氟氖鈉鎂鋁矽磷硫氯氬鉀鈣鈧鈦釩鉻錳鐵鈷鎳銅鋅鎵鍺砷硒溴氪銣鍶銀鎘銦錫銻碲碘氙銫鋇鉑金汞鉈鉛鉍釙氡鍅鐳"
 
 
-# In[2]:
+# In[ ]:
 
 
 df=pd.read_hdf("Model/history.h5")
 
 
-# In[16]:
+# In[ ]:
 
 
 df[["loss","val_loss"]][:200].plot(subplots=True,layout=(1,3),figsize=(18,6))
 
 
-# In[17]:
+# In[ ]:
 
 
 df[["triplet_loss","val_triplet_loss"]][:200].plot(subplots=True,layout=(1,3),figsize=(18,6))
 
 
-# In[12]:
+# In[ ]:
 
 
 df[["anchor_loss","positive_loss","negative_loss"]][:50].plot(subplots=True,layout=(1,3),figsize=(18,6))
 
 
-# In[8]:
+# In[ ]:
 
 
 df[["val_anchor_loss","val_positive_loss","val_negative_loss"]].plot(subplots=True,layout=(1,3),figsize=(18,6))
 
 
-# In[9]:
+# In[ ]:
 
 
 df[["loss","val_loss"]][:30].plot(subplots=True,layout=(1,3),figsize=(18,6))
 
 
-# In[20]:
+# In[ ]:
 
 
 df["triplet_loss"][342:343]
 
 
-# In[104]:
+# In[ ]:
 
 
 l=800
@@ -118,14 +118,14 @@ df2=pd.DataFrame({"loss":loss,"val_loss":val_loss,
                   "triplet_loss":triplet_loss,"val_triplet_loss":val_triplet_loss})
 
 
-# In[105]:
+# In[ ]:
 
 
 _ = pd.DataFrame({20000:df["loss"][:l],19404:df2["loss"][:l]})
 _.plot()
 
 
-# In[106]:
+# In[ ]:
 
 
 column="negative_loss"
@@ -133,7 +133,7 @@ _ = pd.DataFrame({20000:df[column][:l],19404:df2[column][:l]})
 _.plot()
 
 
-# In[107]:
+# In[ ]:
 
 
 column="val_loss"
@@ -141,7 +141,7 @@ _ = pd.DataFrame({20000:df[column][:l],19404:df2[column][:l]})
 _.plot()
 
 
-# In[110]:
+# In[ ]:
 
 
 column="val_triplet_loss"
@@ -153,45 +153,46 @@ _.plot()
 
 # #### load encoder model
 
-# In[45]:
+# In[ ]:
 
 
 from keras.models import load_model
 
 
-# In[53]:
+# In[ ]:
 
 
 def losspassfunction(y_true,y_pred):
     return y_pred
-Tri_AutoEncoder=load_model("Models/Model1/Tri_AutoEncoder.initial.h5",custom_objects={"losspassfunction":losspassfunction})
-Tri_AutoEncoder.load_weights("Models/Model1/regular/weights.600.hdf5")
+path="Models/Model2_addlayer/"
+Tri_AutoEncoder=load_model(path+"Tri_AutoEncoder.initial.h5",custom_objects={"losspassfunction":losspassfunction})
+Tri_AutoEncoder.load_weights(path+"regular/weights.1400.hdf5")
 encoder=Tri_AutoEncoder.layers[3]
 
 
 # #### load data
 
-# In[2]:
+# In[ ]:
 
 
 Data=np.load("D:3.AutoencoderForArticle/BOW_binary_v02.npy")
 
 
-# In[3]:
+# In[ ]:
 
 
 with open("D:3.AutoencoderForArticle/train_dict_collect_small_industry","rb") as f:
     train_dict_collect_small_industry=pickle.load(f)
 
 
-# In[4]:
+# In[ ]:
 
 
 with open("D:3.AutoencoderForArticle/test_dict_collect_small_industry","rb") as f:
     test_dict_collect_small_industry=pickle.load(f)
 
 
-# In[55]:
+# In[ ]:
 
 
 test_x=np.load("D:3.AutoencoderForArticle/test_x_v2.npy")
@@ -200,7 +201,7 @@ test_y=np.load("D:3.AutoencoderForArticle/test_y_v2.npy")
 
 # #### Embedding
 
-# In[56]:
+# In[ ]:
 
 
 emnedding_test_x=encoder.predict(test_x)
@@ -208,7 +209,7 @@ emnedding_test_x=encoder.predict(test_x)
 
 # #### TSEN
 
-# In[60]:
+# In[ ]:
 
 
 from sklearn.manifold import TSNE
@@ -224,11 +225,13 @@ def dot(u,v):
     sig=1/(1+np.exp(-uv))
     return 1-sig
 
-tsne = TSNE(n_components=2, random_state=0,perplexity=40,n_iter=1000,metric=dot,verbose=2)
+tsne = TSNE(n_components=2, random_state=0,perplexity=30,n_iter=2000,
+            metric=cosine,
+            verbose=2)
 intermediates_tsne=tsne.fit_transform(tsne_data)
 
 
-# In[69]:
+# In[ ]:
 
 
 #plot
@@ -244,7 +247,7 @@ plt.legend(fontsize=12)
 plt.savefig("tsnefig/fig1.png")
 
 
-# In[78]:
+# In[ ]:
 
 
 import os
@@ -254,17 +257,28 @@ def dot(u,v):
     uv=np.dot(u,v)
     sig=1/(1+np.exp(-uv))
     return 1-sig
-weightlist=os.listdir("Models/Model1/regular/")
+def losspassfunction(y_true,y_pred):
+    return y_pred
+path="Models/Model2_addlayer/"
+
+Tri_AutoEncoder=load_model(path+"Tri_AutoEncoder.initial.h5",custom_objects={"losspassfunction":losspassfunction})
+encoder=Tri_AutoEncoder.layers[3]
+
+
+metric=cosine
+perplexity=30
+n_iter=250
+weightlist=os.listdir(path+"regular/")
 tsen_result=[]
 for j,w in enumerate(tqdm_notebook(weightlist)):
-    Tri_AutoEncoder.load_weights("Models/Model1/regular/{}".format(w))
+    Tri_AutoEncoder.load_weights(path+"regular/{}".format(w))
     encoder=Tri_AutoEncoder.layers[3]
     emnedding_test_x=encoder.predict(test_x)
     
     tsne_data=emnedding_test_x
     c=test_y
     
-    tsne = TSNE(n_components=2, random_state=0,perplexity=40,n_iter=1000,metric=dot,verbose=0)
+    tsne = TSNE(n_components=2, random_state=0,perplexity=perplexity,n_iter=n_iter,metric=metric,verbose=0)
     intermediates_tsne=tsne.fit_transform(tsne_data)
     tsen_result.append(intermediates_tsne)
 
@@ -280,11 +294,14 @@ for j,w in enumerate(tqdm_notebook(weightlist)):
     if j==0:plt.legend(fontsize=12)
     plt.xlim((-30,30))
     plt.ylim((-30,30))
-    plt.savefig("tsnefig/fig{}.png".format(j))
+    tsnpath =path+"tsnefigs/"
+    if not os.path.isdir(tsnpath):
+        os.mkdir(tsnpath)
+    plt.savefig(tsnpath+"fig{}.png".format(j))
     
 
 
-# In[77]:
+# In[ ]:
 
 
 #plot
