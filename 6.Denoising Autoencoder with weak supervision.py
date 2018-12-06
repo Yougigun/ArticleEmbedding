@@ -34,6 +34,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import re
 import sys
+import os
 from pprint import pprint
 #coding:utf-8
 
@@ -96,7 +97,7 @@ x=np.arange(2*5).reshape((2,5))
 model.predict(x)
 
 
-# In[31]:
+# In[5]:
 
 
 K.clear_session()
@@ -107,24 +108,27 @@ np.random.seed(100)
 # trilosslayer=Lambda(Triplet,name="trilosslayer")
 # dense=Dense(units=12000,activation="sigmoid",name="Dense1")
 ###############
-#parameter setting
-path="Models/Model1"
+#model path
+path="Models/Model2_addlayer"
+if not os.path.isdir(path):
+    os.mkdir(path)
+
+#parameter setting    
 BOW_dim=19404
 DR_dim=100
 loss_weights=[1,1,1,2]
 
 ##Encoder
 x=Input((BOW_dim,),name="encoder_input")
-# y=Lambda(noisefunction,name="noisefunction")
 y=GaussianDropout(rate=0.2,name="noise")(x)
-# y=Dense(units=2000,activation="sigmoid",name="Dense_1")(y)
+y=Dense(units=2000,activation="sigmoid",name="Dense_1")(y)
 y=Dense(units=DR_dim,activation="sigmoid",name="Dense_2",use_bias=False)(y)
 encoder=Model(x,y,name="encoder")
 
 ##Decoder
 x=Input((DR_dim,),name="input") 
 y=x
-# y=Dense(units=2000,activation="sigmoid",use_bias=False,name="Dense_1")(y)
+y=Dense(units=2000,activation="sigmoid",use_bias=False,name="Dense_1")(y)
 y=Dense(units=BOW_dim,activation="sigmoid",name="Dense_2")(y)
 decoder=Model(x,y,name="decoder")
 
@@ -187,20 +191,20 @@ Tri_AutoEncoder.summary()
 
 # ## Load Data
 
-# In[9]:
+# In[6]:
 
 
 Data=np.load("D:3.AutoencoderForArticle/BOW_binary_v02.npy")
 
 
-# In[10]:
+# In[7]:
 
 
 with open("D:3.AutoencoderForArticle/train_dict_collect_small_industry","rb") as f:
     train_dict_collect_small_industry=pickle.load(f)
 
 
-# In[11]:
+# In[8]:
 
 
 with open("D:3.AutoencoderForArticle/test_dict_collect_small_industry","rb") as f:
@@ -209,7 +213,7 @@ with open("D:3.AutoencoderForArticle/test_dict_collect_small_industry","rb") as 
 
 # ## Data generator
 
-# In[32]:
+# In[9]:
 
 
 class DataGenerator(Sequence):
@@ -239,7 +243,7 @@ class DataGenerator(Sequence):
         
 
 
-# In[33]:
+# In[10]:
 
 
 class HardTriGenerator(Sequence):
@@ -297,7 +301,7 @@ class HardTriGenerator(Sequence):
         self.industry=np.random.permutation(self.industry)       
 
 
-# In[34]:
+# In[11]:
 
 
 #setup
@@ -313,7 +317,7 @@ testgenerator=HardTriGenerator(dict_id_news=test_dict_collect_small_industry,
                               )
 
 
-# In[35]:
+# In[12]:
 
 
 for _,i in enumerate(traingenerator):
@@ -321,30 +325,43 @@ for _,i in enumerate(traingenerator):
     break
 
 
+# In[13]:
+
+
+regular_path =path+"/regular"
+if not os.path.isdir(regular_path):
+    os.mkdir(regular_path)
+
+
 # ## Callback function
 
-# In[41]:
+# In[17]:
 
 
 from keras.callbacks import TerminateOnNaN,ModelCheckpoint,TensorBoard
+#creat regular folder
+regular_path =path+"/regular"
+if not os.path.isdir(path):
+    os.mkdir(path)
+# Instantiation claaback function
 checkpointer = ModelCheckpoint(filepath='{}/bestmodel.hdf5'.format(path), verbose=0, save_best_only=True,period=10)
 regularsave = ModelCheckpoint(filepath="{}".format(path)+'/regular/weights.{epoch:02d}.hdf5',
                               save_weights_only=True, 
                               verbose=0,
                               save_best_only=False,period=50)
-logname="model"
+logname="l=2"
 tensorboard=TensorBoard(log_dir="./logs/{}".format(logname))
 
 
 # ## Train
 
-# In[42]:
+# In[18]:
 
 
 #initial
 Tri_AutoEncoder=load_model("{}/Tri_AutoEncoder.initial.h5".format(path),custom_objects={"losspassfunction":losspassfunction})
 #setup
-epochs=1000
+epochs=1440
 # steps_per_epoch=5
 #train
 History=Tri_AutoEncoder.fit_generator(callbacks=[checkpointer,tensorboard,regularsave],
@@ -363,7 +380,7 @@ Tri_AutoEncoder.save("{}/Tri_AutoEncoder_trained.h5".format(path))
 Tri_AutoEncoder.save_weights("{}/weights.h5".format(path))
 
 
-# In[ ]:
+# In[19]:
 
 
 # #partial fit
@@ -374,32 +391,32 @@ Tri_AutoEncoder.save_weights("{}/weights.h5".format(path))
 #         Tri_AutoEncoder.train_on_batch(x=i[0],y=i[1])
 
 
-# In[45]:
+# In[20]:
 
 
 df=pd.DataFrame(History.history)
 df.to_hdf("{}/history.h5".format(path),key="data")
 
 
-# In[46]:
+# In[21]:
 
 
 df[["loss","val_loss"]].plot(subplots=True,layout=(1,3),figsize=(18,6))
 
 
-# In[47]:
+# In[22]:
 
 
 df[["triplet_loss","val_triplet_loss"]].plot(subplots=True,layout=(1,3),figsize=(18,6))
 
 
-# In[48]:
+# In[23]:
 
 
 df[["anchor_loss","positive_loss","negative_loss"]].plot(subplots=True,layout=(1,3),figsize=(18,6))
 
 
-# In[49]:
+# In[24]:
 
 
 df[["val_anchor_loss","val_positive_loss","val_negative_loss"]].plot(subplots=True,layout=(1,3),figsize=(18,6))

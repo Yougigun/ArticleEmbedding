@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[63]:
+# In[1]:
 
 
 from ArticlesRep import MeanSimilarityoneindustry,MeanSimilaritytwoindustry #common function
@@ -148,6 +148,8 @@ column="val_triplet_loss"
 _ = pd.DataFrame({20000:df[column][:l],19404:df2[column][:l]})
 _.plot()
 
+
+# ## Plot Tsene every 50 epochs
 
 # #### load encoder model
 
