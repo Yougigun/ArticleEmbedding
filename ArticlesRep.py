@@ -30,7 +30,7 @@ def MeanSimilarityoneindustry(array,metric="cosine"):
 # In[8]:
 
 
-def MeanSdSimilaritytwoindustry(array1,array2,metric="cosine"):
+def MeanSimilaritytwoindustry(array1,array2,metric="cosine"):
     arra1=np.asarray(array1)
     arra2=np.asarray(array2)
     if metric=="cosine":

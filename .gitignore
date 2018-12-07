@@ -12,11 +12,10 @@
 
 bfg.jar
 .ipynb_checkpoints
-<<<<<<< HEAD
+*.pyc
 tsnefig/
 Models/
 logs/
-=======
 decoder.initial.h5
 encoder.initial.h5
 Tri_AutoEncoder.initial.h5
@@ -36,4 +35,3 @@ logs/
 tsnefig/
 Models/
 Model/
->>>>>>> ModelTraining
