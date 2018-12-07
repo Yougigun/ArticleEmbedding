@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[265]:
+# In[1]:
 
 
 from ArticlesRep import MeanSimilarityoneindustry,MeanSimilaritytwoindustry #common function
@@ -63,26 +63,26 @@ element="氫氦鋰鈹硼碳氮氧氟氖鈉鎂鋁矽磷硫氯氬鉀鈣鈧鈦釩�
 
 # ### Load DataSet_vip_single_industry
 
-# In[3]:
+# In[2]:
 
 
 with open("D:3.AutoencoderForArticle/DataSet_vip_single_industry","rb") as f:
     DataSet=pickle.load(f)
 
 
-# In[5]:
+# In[3]:
 
 
 DataSet.info()
 
 
-# In[9]:
+# In[31]:
 
 
-DataSet.head()
+DataSet[:5]
 
 
-# In[6]:
+# In[5]:
 
 
 _=DataSet["title_token_plus_body_token"]
@@ -90,29 +90,15 @@ _=_.value_counts()
 _.reset_index().rename(columns={"index":"title_token_plus_body_token","title_token_plus_body_token":"counts"})
 
 
-# In[310]:
-
-
-# with open("D:3.AutoencoderForArticle/testset_vip.v01.p","wb") as f:
-#     pickle.dump(file=f,obj=trainset_vip)
-
-
-# In[311]:
-
-
-# with open("D:3.AutoencoderForArticle/testset_vip.v01.p","rb") as f:
-#     x=pickle.load(f)
-
-
 # ### Vectorization
 
-# In[21]:
+# In[6]:
 
 
 from keras.preprocessing.text import Tokenizer
 
 
-# In[62]:
+# In[7]:
 
 
 texts = DataSet["title_token_plus_body_token"]
@@ -123,20 +109,20 @@ print('Found %s unique tokens.' % len(word_index))
 # word_index
 
 
-# In[29]:
+# In[8]:
 
 
 _=pd.Series(tokenizer.word_counts)
 _.sort_values(ascending=False,inplace=True)
 
 
-# In[61]:
+# In[9]:
 
 
 _[:20000][[0,1,2,3,4,5,-6,-5,-4,-3,-2,-1]]
 
 
-# In[68]:
+# In[10]:
 
 
 _=pd.Series(tokenizer.word_docs)
@@ -144,39 +130,27 @@ _.sort_values(ascending=False,inplace=True)
 _[:20000][[0,1,2,3,4,5,-6,-5,-4,-3,-2,-1]]
 
 
-# In[70]:
+# In[11]:
 
 
-one_hot_results = tokenizer.texts_to_matrix(texts, mode='binary')
-one_hot_results
-
-
-# In[88]:
-
-
-one_hot_results=one_hot_results.astype(int)
-
-
-# In[90]:
-
-
+one_hot_results = np.asarray(tokenizer.texts_to_matrix(texts, mode='binary'),dtype="int8")
 one_hot_results
 
 
 # ### Save one_hot_results 
 
-# In[91]:
+# In[13]:
 
 
-# np.save("D:3.AutoencoderForArticle/BOW_binary_v01.npy",one_hot_results)
+np.save("D:3.AutoencoderForArticle/BOW_binary_v01_int8.npy",one_hot_results)
 
 
 # ### Load one_hot_results 
 
-# In[6]:
+# In[14]:
 
 
-BOW_binary=np.load("D:3.AutoencoderForArticle/BOW_binary_v01.npy")
+# BOW_binary=np.load("D:3.AutoencoderForArticle/BOW_binary_v01.npy")
 
 
 # In[7]:
