@@ -109,7 +109,7 @@ np.random.seed(100)
 # dense=Dense(units=12000,activation="sigmoid",name="Dense1")
 ###############
 #model path
-path="Models/Model2_addlayer"
+path="Models/Model3_on_all_industry"
 if not os.path.isdir(path):
     os.mkdir(path)
 
@@ -121,15 +121,15 @@ loss_weights=[1,1,1,2]
 ##Encoder
 x=Input((BOW_dim,),name="encoder_input")
 y=GaussianDropout(rate=0.2,name="noise")(x)
-y=Dense(units=2000,activation="sigmoid",name="Dense_1")(y)
-y=Dense(units=DR_dim,activation="sigmoid",name="Dense_2",use_bias=False)(y)
+# y=Dense(units=2000,activation="sigmoid",name="Dense_1")(y)
+y=Dense(units=DR_dim,activation="sigmoid",name="Dense_1",use_bias=False)(y)
 encoder=Model(x,y,name="encoder")
 
 ##Decoder
 x=Input((DR_dim,),name="input") 
 y=x
-y=Dense(units=2000,activation="sigmoid",use_bias=False,name="Dense_1")(y)
-y=Dense(units=BOW_dim,activation="sigmoid",name="Dense_2")(y)
+y=Dense(units=BOW_dim,activation="sigmoid",use_bias=True,name="Dense_1")(y)
+# y=Dense(units=BOW_dim,activation="sigmoid",name="Dense_2")(y)
 decoder=Model(x,y,name="decoder")
 
 ##Tripletloss
@@ -200,20 +200,32 @@ Data=np.load("D:3.AutoencoderForArticle/BOW_binary_v02.npy")
 # In[7]:
 
 
-with open("D:3.AutoencoderForArticle/train_dict_collect_small_industry","rb") as f:
-    train_dict_collect_small_industry=pickle.load(f)
+with open("D:3.AutoencoderForArticle/train_dict_collect_industry_50000.p","rb") as f:
+    train_dict_collect_industry_50000=pickle.load(f)
 
 
 # In[8]:
 
 
-with open("D:3.AutoencoderForArticle/test_dict_collect_small_industry","rb") as f:
-    test_dict_collect_small_industry=pickle.load(f)
+train_dict_collect_industry_50000.pop("控股","沒有")
+
+
+# In[9]:
+
+
+with open("D:3.AutoencoderForArticle/test_dict_collect_industry_50000.p","rb") as f:
+    test_dict_collect_industry_50000=pickle.load(f)
+
+
+# In[10]:
+
+
+test_dict_collect_industry_50000.pop("控股","沒有")
 
 
 # ## Data generator
 
-# In[9]:
+# In[11]:
 
 
 class DataGenerator(Sequence):
@@ -243,7 +255,7 @@ class DataGenerator(Sequence):
         
 
 
-# In[10]:
+# In[12]:
 
 
 class HardTriGenerator(Sequence):
@@ -258,7 +270,7 @@ class HardTriGenerator(Sequence):
         self.Data=Data
 
     def __len__(self):
-        return int(np.ceil(len(self.industry) / self.P))
+        return int(np.floor(len(self.industry) / self.P))
 #         return 1
     def __getitem__(self, idx):
         indusrty= self.industry[idx*self.P:(idx+1)*self.P]
@@ -301,23 +313,23 @@ class HardTriGenerator(Sequence):
         self.industry=np.random.permutation(self.industry)       
 
 
-# In[11]:
+# In[17]:
 
 
 #setup
 
 #instantiate generator
-traingenerator=HardTriGenerator(dict_id_news=train_dict_collect_small_industry,
+traingenerator=HardTriGenerator(dict_id_news=train_dict_collect_industry_50000,
                                 Data=Data,
-                                P=3,
-                                K=8,
+                                P=3, # remainder>=2;
+                                K=5,
                                )
-testgenerator=HardTriGenerator(dict_id_news=test_dict_collect_small_industry,
-                               Data=Data,P=3,K=8,
+testgenerator=HardTriGenerator(dict_id_news=test_dict_collect_industry_50000,
+                               Data=Data,P=3,K=5,
                               )
 
 
-# In[12]:
+# In[18]:
 
 
 for _,i in enumerate(traingenerator):
@@ -325,44 +337,37 @@ for _,i in enumerate(traingenerator):
     break
 
 
-# In[13]:
-
-
-regular_path =path+"/regular"
-if not os.path.isdir(regular_path):
-    os.mkdir(regular_path)
-
-
 # ## Callback function
 
-# In[17]:
+# In[19]:
 
 
 from keras.callbacks import TerminateOnNaN,ModelCheckpoint,TensorBoard
 #creat regular folder
+
 regular_path =path+"/regular"
-if not os.path.isdir(path):
-    os.mkdir(path)
+logname="model3allindustry50000"
+if not os.path.isdir(regular_path):
+    os.mkdir(regular_path)
 # Instantiation claaback function
 checkpointer = ModelCheckpoint(filepath='{}/bestmodel.hdf5'.format(path), verbose=0, save_best_only=True,period=10)
 regularsave = ModelCheckpoint(filepath="{}".format(path)+'/regular/weights.{epoch:02d}.hdf5',
                               save_weights_only=True, 
                               verbose=0,
                               save_best_only=False,period=50)
-logname="l=2"
+
 tensorboard=TensorBoard(log_dir="./logs/{}".format(logname))
 
 
 # ## Train
 
-# In[18]:
+# In[21]:
 
 
 #initial
 Tri_AutoEncoder=load_model("{}/Tri_AutoEncoder.initial.h5".format(path),custom_objects={"losspassfunction":losspassfunction})
 #setup
-epochs=1440
-# steps_per_epoch=5
+epochs=4560
 #train
 History=Tri_AutoEncoder.fit_generator(callbacks=[checkpointer,tensorboard,regularsave],
                                       generator=traingenerator,
@@ -391,32 +396,32 @@ Tri_AutoEncoder.save_weights("{}/weights.h5".format(path))
 #         Tri_AutoEncoder.train_on_batch(x=i[0],y=i[1])
 
 
-# In[20]:
+# In[22]:
 
 
 df=pd.DataFrame(History.history)
 df.to_hdf("{}/history.h5".format(path),key="data")
 
 
-# In[21]:
+# In[23]:
 
 
 df[["loss","val_loss"]].plot(subplots=True,layout=(1,3),figsize=(18,6))
 
 
-# In[22]:
+# In[24]:
 
 
 df[["triplet_loss","val_triplet_loss"]].plot(subplots=True,layout=(1,3),figsize=(18,6))
 
 
-# In[23]:
+# In[25]:
 
 
 df[["anchor_loss","positive_loss","negative_loss"]].plot(subplots=True,layout=(1,3),figsize=(18,6))
 
 
-# In[24]:
+# In[26]:
 
 
 df[["val_anchor_loss","val_positive_loss","val_negative_loss"]].plot(subplots=True,layout=(1,3),figsize=(18,6))
