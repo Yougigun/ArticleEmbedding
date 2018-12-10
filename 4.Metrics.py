@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[1]:
+# In[2]:
 
 
 from ArticlesRep import MeanSimilarityoneindustry,MeanSimilaritytwoindustry #common function
@@ -412,10 +412,6 @@ from keras.models import load_model
 
 
 # custommed function
-def noisefunction(x):
-    x_noise=K.ones_like(x)
-    return K.in_train_phase(x_noise,x,1)
-
 def tripletlossfunction(inputs):
     r01=inputs[0]
     r02=inputs[1]
@@ -426,11 +422,6 @@ def tripletlossfunction(inputs):
 
 def losspassfunction(y_true,y_pred):
     return y_pred
-
-def test(inputs):
-#     x=K.dot(inputs,k.transpose(inputs))
-    x=K.transpose(inputs)
-    return x
 
 
 # In[11]:
@@ -543,40 +534,38 @@ pd.DataFrame(li).rename(columns={0:"industry",1:"R",2:"UR",3:"(R-UR)/2"}).sort_v
 
 # ### Similarity  In terms of  AE with supervision (Model 2 layer ,common 19404 words)
 
-# In[2]:
+# In[29]:
 
 
 Data=np.load("D:3.AutoencoderForArticle/BOW_binary_v02.npy")
 
 
-# In[7]:
+# In[80]:
 
 
 with open("D:3.AutoencoderForArticle/train_dict_collect_small_industry","rb") as f:
     train_dict_collect_small_industry=pickle.load(f)
 
 
-# In[8]:
+# In[81]:
 
 
 with open("D:3.AutoencoderForArticle/test_dict_collect_small_industry","rb") as f:
     test_dict_collect_small_industry=pickle.load(f)
 
 
-# In[9]:
+# #### load model
+
+# In[82]:
 
 
 from keras.models import load_model
 
 
-# In[10]:
+# In[83]:
 
 
 # custommed function
-def noisefunction(x):
-    x_noise=K.ones_like(x)
-    return K.in_train_phase(x_noise,x,1)
-
 def tripletlossfunction(inputs):
     r01=inputs[0]
     r02=inputs[1]
@@ -588,75 +577,22 @@ def tripletlossfunction(inputs):
 def losspassfunction(y_true,y_pred):
     return y_pred
 
-def test(inputs):
-#     x=K.dot(inputs,k.transpose(inputs))
-    x=K.transpose(inputs)
-    return x
+
+# In[84]:
 
 
-# In[11]:
+Tri_AutoEncoder=load_model("Models/Model2_addlayer/Tri_AutoEncoder_trained.h5",custom_objects={"losspassfunction":losspassfunction})
 
 
-Tri_AutoEncoder=load_model("Models/Model2_addlayer/bestmodel.hdf5",custom_objects={"losspassfunction":losspassfunction})
-
-
-# In[12]:
+# In[85]:
 
 
 encoder_in_AE=Tri_AutoEncoder.layers[3]
 
 
-# ### on Trainset
+# ### on Testset
 
-# In[17]:
-
-
-li=[]
-model=encoder_in_AE
-dict_collect_industry=train_dict_collect_small_industry
-bow=Data
-for k in tqdm_notebook(dict_collect_industry):
-    array1=bow[dict_collect_industry[k]]
-    if len(array1)!=0:
-        array1=model.predict(array1)
-        for j in dict_collect_industry:
-                array2=bow[dict_collect_industry[j]]
-                if len(array2)!=0:
-                    array2=model.predict(array2)
-                    simi=MeanSimilaritytwoindustry(array1,array2)
-                    print(k,j,simi)
-                    li.append((k,j,simi))
-
-
-# In[18]:
-
-
-df_trainAE=pd.DataFrame(li)
-df_trainAE=df_trainAE.pivot(index=0,columns=1,values=2)
-
-
-# In[19]:
-
-
-df_trainAE
-
-
-# In[18]:
-
-
-#AE
-li=[]
-for i,S in df_trainAE[:].iterrows():
-    R=S.loc[i]
-    UR=S.drop(i).mean()
-    result=(R-UR)/2
-    li.append((i,R,UR,result))
-pd.DataFrame(li).rename(columns={0:"industry",1:"R",2:"UR",3:"(R-UR)/2"}).sort_values("(R-UR)/2",ascending=False)
-
-
-# ### on testset
-
-# In[13]:
+# In[86]:
 
 
 li=[]
@@ -676,20 +612,206 @@ for k in tqdm_notebook(dict_collect_industry):
                     li.append((k,j,simi))
 
 
-# In[14]:
+# In[87]:
 
 
 df_trainAE=pd.DataFrame(li)
 df_trainAE=df_trainAE.pivot(index=0,columns=1,values=2)
 
 
-# In[15]:
+# In[88]:
 
 
 df_trainAE
 
 
-# In[16]:
+# In[89]:
+
+
+#AE
+li=[]
+for i,S in df_trainAE[:].iterrows():
+    R=S.loc[i]
+    UR=S.drop(i).mean()
+    result=(R-UR)/2
+    li.append((i,R,UR,result))
+pd.DataFrame(li).rename(columns={0:"industry",1:"R",2:"UR",3:"(R-UR)/2"}).sort_values("(R-UR)/2",ascending=False)
+
+
+# ### on Trainset
+
+# In[90]:
+
+
+li=[]
+model=encoder_in_AE
+dict_collect_industry=train_dict_collectindustry
+bow=Data
+for k in tqdm_notebook(dict_collect_industry):
+    array1=bow[dict_collect_industry[k]]
+    if len(array1)!=0:
+        array1=model.predict(array1)
+        for j in dict_collect_industry:
+                array2=bow[dict_collect_industry[j]]
+                if len(array2)!=0:
+                    array2=model.predict(array2)
+                    simi=MeanSimilaritytwoindustry(array1,array2)
+                    print(k,j,simi)
+                    li.append((k,j,simi))
+
+
+# In[91]:
+
+
+df_trainAE=pd.DataFrame(li)
+df_trainAE=df_trainAE.pivot(index=0,columns=1,values=2)
+
+
+# In[92]:
+
+
+df_trainAE
+
+
+# In[93]:
+
+
+#AE
+li=[]
+for i,S in df_trainAE[:].iterrows():
+    R=S.loc[i]
+    UR=S.drop(i).mean()
+    result=(R-UR)/2
+    li.append((i,R,UR,result))
+pd.DataFrame(li).rename(columns={0:"industry",1:"R",2:"UR",3:"(R-UR)/2"}).sort_values("(R-UR)/2",ascending=False)
+
+
+# ## Similarity  In terms of  AE with supervision (1 layer ,common 19404 words,50000 news)
+
+# In[96]:
+
+
+Data=np.load("D:3.AutoencoderForArticle/BOW_binary_v02.npy")
+
+
+# In[97]:
+
+
+with open("D:3.AutoencoderForArticle/train_dict_collect_industry_50000.p","rb") as f:
+    train_dict_collect_industry=pickle.load(f)
+
+
+# In[98]:
+
+
+with open("D:3.AutoencoderForArticle/test_dict_collect_industry_50000.p","rb") as f:
+    test_dict_collect_industry=pickle.load(f)
+
+
+# In[99]:
+
+
+from keras.models import load_model
+
+
+# In[100]:
+
+
+def losspassfunction(y_true,y_pred):
+    return y_pred
+
+
+# In[101]:
+
+
+Tri_AutoEncoder=load_model("Models/Model3_on_all_industry/bestmodel.hdf5",custom_objects={"losspassfunction":losspassfunction})
+
+
+# In[102]:
+
+
+encoder_in_AE=Tri_AutoEncoder.layers[3]
+
+
+# ### on Trainset
+
+# In[72]:
+
+
+li=[]
+model=encoder_in_AE
+dict_collect_industry=train_dict_collect_industry
+bow=Data
+for k in tqdm_notebook(dict_collect_industry):
+    array1=bow[dict_collect_industry[k]]
+    if len(array1)!=0:
+        array1=model.predict(array1)
+        for j in dict_collect_industry:
+                array2=bow[dict_collect_industry[j]]
+                if len(array2)!=0:
+                    array2=model.predict(array2)
+                    simi=MeanSimilaritytwoindustry(array1,array2)
+                    print(k,j,simi)
+                    li.append((k,j,simi))
+
+
+# In[73]:
+
+
+df_trainAE=pd.DataFrame(li)
+df_trainAE=df_trainAE.pivot(index=0,columns=1,values=2)
+
+
+# In[75]:
+
+
+#AE
+li=[]
+for i,S in df_trainAE[:].iterrows():
+    R=S.loc[i]
+    UR=S.drop(i).mean()
+    result=(R-UR)/2
+    li.append((i,R,UR,result))
+pd.DataFrame(li).rename(columns={0:"industry",1:"R",2:"UR",3:"(R-UR)/2"}).sort_values("(R-UR)/2",ascending=False)
+
+
+# ### on testset
+
+# In[103]:
+
+
+
+li=[]
+model=encoder_in_AE
+dict_collect_industry=test_dict_collect_industry
+bow=Data
+for k in tqdm_notebook(dict_collect_industry):
+    array1=bow[dict_collect_industry[k]]
+    if len(array1)!=0:
+        array1=model.predict(array1)
+        for j in dict_collect_industry:
+                array2=bow[dict_collect_industry[j]]
+                if len(array2)!=0:
+                    array2=model.predict(array2)
+                    simi=MeanSimilaritytwoindustry(array1,array2)
+                    print(k,j,simi)
+                    li.append((k,j,simi))
+
+
+# In[104]:
+
+
+df_trainAE=pd.DataFrame(li)
+df_trainAE=df_trainAE.pivot(index=0,columns=1,values=2)
+
+
+# In[105]:
+
+
+df_trainAE
+
+
+# In[106]:
 
 
 #AE

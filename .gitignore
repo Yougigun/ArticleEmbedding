@@ -35,3 +35,4 @@ logs/
 tsnefig/
 Models/
 Model/
+__pycache__/

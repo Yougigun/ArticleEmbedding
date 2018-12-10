@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
 
 
 from ArticlesRep import MeanSimilarityoneindustry,MeanSimilaritytwoindustry #common function
@@ -153,63 +153,120 @@ _.plot()
 
 # #### load encoder model
 
-# In[ ]:
+# In[2]:
 
 
 from keras.models import load_model
 
 
-# In[ ]:
+# In[267]:
 
 
 def losspassfunction(y_true,y_pred):
     return y_pred
-path="Models/Model2_addlayer/"
-Tri_AutoEncoder=load_model(path+"Tri_AutoEncoder.initial.h5",custom_objects={"losspassfunction":losspassfunction})
-Tri_AutoEncoder.load_weights(path+"regular/weights.1400.hdf5")
+path="Models/Model3_on_all_industry/"
+Tri_AutoEncoder=load_model(path+"bestmodel.hdf5",custom_objects={"losspassfunction":losspassfunction})
+# Tri_AutoEncoder.load_weights(path+"regular/weights.2649.hdf5")
 encoder=Tri_AutoEncoder.layers[3]
 
 
-# #### load data
+# #### Preapre data
 
-# In[ ]:
-
-
-Data=np.load("D:3.AutoencoderForArticle/BOW_binary_v02.npy")
+# In[7]:
 
 
-# In[ ]:
+# Data=np.load("D:3.AutoencoderForArticle/BOW_binary_v02.npy")
 
 
-with open("D:3.AutoencoderForArticle/train_dict_collect_small_industry","rb") as f:
-    train_dict_collect_small_industry=pickle.load(f)
+# In[13]:
 
 
-# In[ ]:
-
-
-with open("D:3.AutoencoderForArticle/test_dict_collect_small_industry","rb") as f:
-    test_dict_collect_small_industry=pickle.load(f)
+# with open("D:3.AutoencoderForArticle/train_dict_collect_industry_50000.p","rb") as f:
+#     train_dict_collect_industry_50000=pickle.load(f)
 
 
 # In[ ]:
 
 
-test_x=np.load("D:3.AutoencoderForArticle/test_x_v2.npy")
-test_y=np.load("D:3.AutoencoderForArticle/test_y_v2.npy")
+# with open("D:3.AutoencoderForArticle/test_dict_collect_industry_50000.p","rb") as f:
+#     test_dict_collect_industry_50000=pickle.load(f)
+
+
+# In[35]:
+
+
+# train_x_index=[]
+# train_y=[]
+# for k in train_dict_collect_industry_50000:
+#     train_x_index+=list(train_dict_collect_industry_50000[k])
+#     train_y+=[k]*len(train_dict_collect_industry_50000[k])
+# len(train_x_index)
+# len(train_y)
+# train_x=Data[train_x_index]
+# train_y=np.asarray(train_y)
+
+# test_x_index=[]
+# test_y=[]
+# for k in test_dict_collect_industry_50000:
+#     test_x_index+=list(test_dict_collect_industry_50000[k])
+#     test_y+=[k]*len(test_dict_collect_industry_50000[k])
+# len(test_x_index)
+# len(test_y)
+# test_x=Data[test_x_index]
+# test_y=np.asarray(test_y)
+
+
+# In[36]:
+
+
+# np.save("D:3.AutoencoderForArticle/train_x_v2_50000",train_x)
+# np.save("D:3.AutoencoderForArticle/train_y_v2_50000",train_y)
+# np.save("D:3.AutoencoderForArticle/test_x_v2_50000",test_x)
+# np.save("D:3.AutoencoderForArticle/test_y_v2_50000",test_y)
+
+
+# ### Load data
+
+# In[4]:
+
+
+train_x=np.load("D:3.AutoencoderForArticle/train_x_v2_50000.npy")
+train_y=np.load("D:3.AutoencoderForArticle/train_y_v2_50000.npy")
+test_x=np.load("D:3.AutoencoderForArticle/test_x_v2_50000.npy")
+test_y=np.load("D:3.AutoencoderForArticle/test_y_v2_50000.npy")
 
 
 # #### Embedding
 
-# In[ ]:
+# In[114]:
+
+
+# np.random.seed(0)
+pick=np.random.permutation(len(train_x))[:1000]
+train_x_pick=train_x[pick]
+train_y_pick=train_y[pick]
+
+
+# In[215]:
+
+
+np.random.seed(0)
+pick=np.random.permutation(len(test_y))[:1000]
+test_x_pick=test_x[pick]
+test_y_pick=test_y[pick]
+pick
+
+
+# In[277]:
 
 
 emnedding_test_x=encoder.predict(test_x)
+emnedding_test_x.shape
 
 
 # #### TSEN
 
-# In[ ]:
+# In[315]:
 
 
 from sklearn.manifold import TSNE
@@ -225,29 +282,49 @@ def dot(u,v):
     sig=1/(1+np.exp(-uv))
     return 1-sig
 
-tsne = TSNE(n_components=2, random_state=0,perplexity=30,n_iter=2000,
+tsne = TSNE(n_components=2, random_state=0,
+            perplexity=50,
+            n_iter=1000,
             metric=cosine,
             verbose=2)
 intermediates_tsne=tsne.fit_transform(tsne_data)
 
 
-# In[ ]:
+# In[317]:
 
 
 #plot
-color=["r","b","y","g","k"]
-marker=["^","s","o","D","+"]
-
-plt.figure(figsize=(8, 8),)
+color=["#ff6f52","#3778bf","#ed0dd9","#feb209","#a90308","#758000"]
+marker=["^","s","o","D","+","x"]
+import matplotlib
+plt.figure(figsize=(20,20),)
 for i,k in enumerate(set(c)):
     c=np.asarray(c)
     pick=c==k
-    plt.scatter(x = intermediates_tsne[pick,0], y=intermediates_tsne[pick,1],c=color[i],marker=marker[i],label=k,)
-plt.legend(fontsize=12)
-plt.savefig("tsnefig/fig1.png")
+    plt.scatter(x = intermediates_tsne[pick,0], y=intermediates_tsne[pick,1],
+                c=color[i%len(color)],s=40,linewidth=1,edgecolors="black",
+#                 cmap="flag",
+                marker=marker[(i//len(marker))%len(marker)],
+                label=k,)
+plt.legend(fontsize=19,
+#            mode="expand",
+           ncol=6,
+           loc='lower left',
+           bbox_to_anchor=(0,1),fancybox=True,shadow=True)
+plt.xlim((-75,75))
+plt.ylim((-75,75))
+plt.xticks(fontsize=25)
+plt.yticks(fontsize=25)
+plt.savefig("tsnefig/cosine.test.png")
 
 
-# In[ ]:
+# In[259]:
+
+
+np.sum(test_y=="公用事業")
+
+
+# In[262]:
 
 
 import os
@@ -259,62 +336,53 @@ def dot(u,v):
     return 1-sig
 def losspassfunction(y_true,y_pred):
     return y_pred
-path="Models/Model2_addlayer/"
 
+
+path="Models/Model3_on_all_industry/"
+metric=cosine
+perplexity=50
+n_iter=1500
+X=test_x_pick
+Y=test_y_pick
+weightlist=os.listdir(path+"regular/")
 Tri_AutoEncoder=load_model(path+"Tri_AutoEncoder.initial.h5",custom_objects={"losspassfunction":losspassfunction})
 encoder=Tri_AutoEncoder.layers[3]
 
-
-metric=cosine
-perplexity=30
-n_iter=250
-weightlist=os.listdir(path+"regular/")
 tsen_result=[]
 for j,w in enumerate(tqdm_notebook(weightlist)):
     Tri_AutoEncoder.load_weights(path+"regular/{}".format(w))
     encoder=Tri_AutoEncoder.layers[3]
-    emnedding_test_x=encoder.predict(test_x)
+    emnedding_X=encoder.predict(X)
     
-    tsne_data=emnedding_test_x
-    c=test_y
+    tsne_data=emnedding_X
+    c=Y
     
     tsne = TSNE(n_components=2, random_state=0,perplexity=perplexity,n_iter=n_iter,metric=metric,verbose=0)
     intermediates_tsne=tsne.fit_transform(tsne_data)
     tsen_result.append(intermediates_tsne)
 
     #plot
-    color=["r","b","y","g","k"]
-    marker=["^","s","o","D","+"]
-
-    plt.figure(figsize=(8, 8),)
+    color=["#ff6f52","#3778bf","#a88f59","#feb209","#a90308","#758000"]
+    marker=["^","s","o","D","+",1]
+    plt.figure(figsize=(20,20),)
     for i,k in enumerate(set(c)):
         c=np.asarray(c)
         pick=c==k
-        plt.scatter(x = intermediates_tsne[pick,0], y=intermediates_tsne[pick,1],c=color[i],marker=marker[i],label=k,)
-    if j==0:plt.legend(fontsize=12)
+        plt.scatter(x = intermediates_tsne[pick,0], y=intermediates_tsne[pick,1],
+                    linewidth=1,edgecolors="black",
+                    c=color[i%len(color)],s=200,
+                    marker=marker[(i//len(marker))%len(marker)],
+                    label=k,)
+    plt.legend(fontsize=20,
+               bbox_to_anchor=(1,1),fancybox=True,shadow=True)
     plt.xlim((-30,30))
     plt.ylim((-30,30))
+    plt.xticks(fontsize=25)
+    plt.yticks(fontsize=25)
+    
     tsnpath =path+"tsnefigs/"
     if not os.path.isdir(tsnpath):
         os.mkdir(tsnpath)
     plt.savefig(tsnpath+"fig{}.png".format(j))
     
-
-
-# In[ ]:
-
-
-#plot
-color=["r","b","y","g","k"]
-marker=["^","s","o","D","+"]
-
-plt.figure(figsize=(8, 8),)
-for i,k in enumerate(set(c)):
-    c=np.asarray(c)
-    pick=c==k
-    plt.scatter(x = intermediates_tsne[pick,0], y=intermediates_tsne[pick,1],c=color[i],marker=marker[i],label=k,)
-# plt.legend(fontsize=12)
-plt.xlim((-30,30))
-plt.ylim((-30,30))
-# plt.savefig("tsnefig/fig{}.png".format(j))
 

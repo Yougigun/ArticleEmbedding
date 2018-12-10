@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[1]:
+# In[2]:
 
 
 from ArticlesRep import MeanSimilarityoneindustry,MeanSimilaritytwoindustry #common function
@@ -46,6 +46,7 @@ list_industry=["水泥","食品飲料","石化","紡織","電機機械","電器�
                "金融相關","百貨通路","公用事業","控股","生技醫療保健","農林漁牧","航天軍工","能源","傳播出版","綜合",
                "傳產其他","其他","金屬礦採選",
               ]
+small_list_insustry=["車輛相關","生技醫療保健","營建地產","百貨通路","傳播出版"]
 
 
 # In[180]:
@@ -149,124 +150,99 @@ for k in small_dict_collect_industry:
     if len(negative_pool[k])!=0:negative_pool[k]=np.random.permutation(negative_pool[k])
 
 
-# In[342]:
+# ## Build dict train/test industry:index in 50,000 single industry VIP news  
+
+# In[8]:
 
 
-small_triplet={k:[] for k in small_list_insustry}
-for k in small_triplet:
-    positive=small_dict_collect_industry[k]
-    negative=negative_pool[k]
-    for i in range(len(positive[:-1])):
-        small_triplet[k].append(positive[i:i+2]+list(negative[i:i+1]))
-    assert len(small_triplet[k])==len(small_dict_collect_industry[k])-1
-dict_small_triplet=small_triplet
+with open("D:3.AutoencoderForArticle/DataSet_vip_single_industry","rb") as f:
+    Dataset=pickle.load(f)
 
 
-# ####   anchor positive negative
-# ####   (A1,A2,C9)
-# ####   (A2,A3,C5)
-# ####   ....etc.
-# ####   note:randomly pick negative
-# ####   disadvantage: negative too less , may cause overfitting or even cant generalization
-
-# In[343]:
+# In[10]:
 
 
-# with open("D:3.AutoencoderForArticle/dict_small_triplet.p","wb") as f:
-#     pickle.dump(file=f,obj=dict_small_triplet)
+Dataset.info()
 
 
-# In[344]:
+# #### build dict_collect_industry_50000
+
+# In[121]:
 
 
-# with open("D:3.AutoencoderForArticle/dict_small_triplet.p","rb") as f:
-#     test=pickle.load(f)
+np.random.seed(0)
+suffleindex=np.random.permutation(len(Dataset))
+pick=suffleindex[:50000]
+pick
 
 
-# In[345]:
+# In[122]:
 
 
+dict_collect_industry_50000={i:[] for i in list_industry }
+for i,j in Dataset.loc[pick].iterrows():
+    for k in dict_collect_industry_50000:
+        if k in j[2]:
+            dict_collect_industry_50000[k].append(i)
+            break
 
 
-
-# ## V2 tripletDataset
-
-# In[2]:
+# In[123]:
 
 
-with open("D:3.AutoencoderForArticle/dict_collect_industry.p","rb") as f:
-    dict_collect_industry=pickle.load(f)
+dict_count={}
+for k in dict_collect_industry_50000:
+    dict_count[k]=len(dict_collect_industry_50000[k])
+df=pd.Series(dict_count)
+df.sort_values(ascending=False)
 
 
-# In[27]:
+# ### build train and test
+
+# In[172]:
 
 
-small_list_insustry=["車輛相關","生技醫療保健","營建地產","百貨通路","傳播出版"]
-dict_collect_small_industry={i:dict_collect_industry[i] for i in small_list_insustry }
-train_dict_collect_small_industry=dict()
-test_dict_collect_small_industry=dict()
-for k in dict_collect_small_industry:
-    split=0.8
-    indulist=dict_collect_small_industry[k]
-    indulen=len(indulist)
-    train_dict_collect_small_industry[k]=indulist[:int(indulen*split)]
-    test_dict_collect_small_industry[k]=indulist[int(indulen*split):]
+train_dict_collect_industry_50000=dict()
+test_dict_collect_industry_50000=dict()
+np.random.seed(10)
+rate=3/4
+for i in dict_collect_industry_50000:
+    induslist=np.random.permutation(dict_collect_industry_50000[i])
+    if 0!=len(induslist):
+        split=int(np.ceil(len(induslist)*rate))
+        train_dict_collect_industry_50000[i]=induslist[:split]
+        test_dict_collect_industry_50000[i]=induslist[split:]
 
 
-# In[28]:
+# #### Save train_test_dict_collect_industry
+
+# In[176]:
 
 
-get_ipython().run_cell_magic('time', '', 'train_dict_small_triplet_v02=dict()\nfor k in tqdm_notebook(train_dict_collect_small_industry):\n    poslist=train_dict_collect_small_industry[k]\n    poslen=len(poslist)\n    neglist=[]\n    for j in train_dict_collect_small_industry:\n        if k!=j :\n            neglist+=train_dict_collect_small_industry[j]\n        neglen=len(neglist)\n    indarray=np.zeros((int(poslen*(poslen-1)*neglen/2),3),dtype=int)\n    \n    i=0\n    for ip1_,p1 in enumerate(tqdm_notebook(poslist)):\n        for ip2_,p2 in enumerate(poslist[ip1_+1:]):\n            for in_,n in enumerate(neglist):\n#                 print(p1,p2,n)\n                indarray[i,0]=p1\n                indarray[i,1]=p2\n                indarray[i,2]=n\n                i+=1\n#                 break\n#             break\n#         break\n    train_dict_small_triplet_v02[k]=indarray')
+with open("D:3.AutoencoderForArticle/train_dict_collect_industry_50000.p","wb") as f:
+    pickle.dump(file=f,obj=train_dict_collect_industry_50000)
+with open("D:3.AutoencoderForArticle/test_dict_collect_industry_50000.p","wb") as f:
+    pickle.dump(file=f,obj=test_dict_collect_industry_50000)
 
 
-# In[30]:
+# In[173]:
 
 
-get_ipython().run_cell_magic('time', '', 'test_dict_small_triplet_v02=dict()\nfor k in tqdm_notebook(test_dict_collect_small_industry):\n    poslist=test_dict_collect_small_industry[k]\n    poslen=len(poslist)\n    neglist=[]\n    for j in test_dict_collect_small_industry:\n        if k!=j :\n            neglist+=test_dict_collect_small_industry[j]\n        neglen=len(neglist)\n    indarray=np.zeros((int(poslen*(poslen-1)*neglen/2),3),dtype=int)\n    \n    i=0\n    for ip1_,p1 in enumerate(tqdm_notebook(poslist)):\n        for ip2_,p2 in enumerate(poslist[ip1_+1:]):\n            for in_,n in enumerate(neglist):\n#                 print(p1,p2,n)\n                indarray[i,0]=p1\n                indarray[i,1]=p2\n                indarray[i,2]=n\n                i+=1\n#                 break\n#             break\n#         break\n    test_dict_small_triplet_v02[k]=indarray')
+dict_count={}
+dict_idu_list=train_dict_collect_industry_50000
+for k in dict_idu_list:
+    dict_count[k]=len(dict_idu_list[k])
+df=pd.Series(dict_count)
+df.sort_values(ascending=False)
 
 
-# In[32]:
+# In[174]:
 
 
-test_dict_small_triplet_v02[k].shape
-
-
-# In[33]:
-
-
-train_dict_small_triplet_v02[k].shape
-
-
-# In[42]:
-
-
-# with open("D:3.AutoencoderForArticle/train_dict_collect_small_industry","wb") as f:
-#     pickle.dump(train_dict_collect_small_industry,f)
-
-
-# In[43]:
-
-
-# with open("D:3.AutoencoderForArticle/test_dict_collect_small_industry","wb") as f:
-#     pickle.dump(test_dict_collect_small_industry,f)
-
-
-# In[44]:
-
-
-# with open("D:3.AutoencoderForArticle/train_dict_small_triplet_v02","wb") as f:
-#     pickle.dump(train_dict_small_triplet_v02,f)
-
-
-# In[45]:
-
-
-# with open("D:3.AutoencoderForArticle/test_dict_small_triplet_v02","wb") as f:
-#     pickle.dump(test_dict_small_triplet_v02,f)
-
-
-# In[49]:
-
-
-pprint(test)
+dict_count={}
+dict_idu_list=test_dict_collect_industry_50000
+for k in dict_idu_list:
+    dict_count[k]=len(dict_idu_list[k])
+df=pd.Series(dict_count)
+df.sort_values(ascending=False)
 

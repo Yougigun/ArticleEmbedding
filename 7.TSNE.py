@@ -422,3 +422,96 @@ for i,k in enumerate(set(c)):
     plt.scatter(x = intermediates_tsne[pick,0], y=intermediates_tsne[pick,1],c=color[i],marker=marker[i],label=k,)
 plt.legend(fontsize=12)
 
+
+# ## TSNE of TestSet(12491 from 50000)
+
+# ### Load data
+
+# In[4]:
+
+
+train_x=np.load("D:3.AutoencoderForArticle/train_x_v2_50000.npy")
+train_y=np.load("D:3.AutoencoderForArticle/train_y_v2_50000.npy")
+test_x=np.load("D:3.AutoencoderForArticle/test_x_v2_50000.npy")
+test_y=np.load("D:3.AutoencoderForArticle/test_y_v2_50000.npy")
+
+
+# #### Embedding
+
+# In[114]:
+
+
+# np.random.seed(0)
+pick=np.random.permutation(len(train_x))[:1000]
+train_x_pick=train_x[pick]
+train_y_pick=train_y[pick]
+
+
+# In[215]:
+
+
+np.random.seed(0)
+pick=np.random.permutation(len(test_y))[:1000]
+test_x_pick=test_x[pick]
+test_y_pick=test_y[pick]
+pick
+
+
+# In[277]:
+
+
+emnedding_test_x=encoder.predict(test_x)
+emnedding_test_x.shape
+
+
+# In[315]:
+
+
+from sklearn.manifold import TSNE
+from scipy.spatial.distance import cosine
+#set
+tsne_data=emnedding_test_x
+c=test_y
+#metric
+def dot(u,v):
+    u=np.asarray(u)
+    v=np.asarray(v)
+    uv=np.dot(u,v)
+    sig=1/(1+np.exp(-uv))
+    return 1-sig
+
+tsne = TSNE(n_components=2, random_state=0,
+            perplexity=50,
+            n_iter=1000,
+            metric=cosine,
+            verbose=2)
+intermediates_tsne=tsne.fit_transform(tsne_data)
+
+
+# In[317]:
+
+
+#plot
+color=["#ff6f52","#3778bf","#ed0dd9","#feb209","#a90308","#758000"]
+marker=["^","s","o","D","+","x"]
+import matplotlib
+plt.figure(figsize=(20,20),)
+for i,k in enumerate(set(c)):
+    c=np.asarray(c)
+    pick=c==k
+    plt.scatter(x = intermediates_tsne[pick,0], y=intermediates_tsne[pick,1],
+                c=color[i%len(color)],s=40,linewidth=1,edgecolors="black",
+#                 cmap="flag",
+                marker=marker[(i//len(marker))%len(marker)],
+                label=k,)
+plt.legend(fontsize=19,
+#            mode="expand",
+           ncol=6,
+           loc='lower left',
+           bbox_to_anchor=(0,1),fancybox=True,shadow=True)
+plt.xlim((-75,75))
+plt.ylim((-75,75))
+plt.xticks(fontsize=25)
+plt.yticks(fontsize=25)
+plt.savefig("tsnefig/cosine.test.png")
+

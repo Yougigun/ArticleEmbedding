@@ -35,6 +35,9 @@ def MeanSimilaritytwoindustry(array1,array2,metric="cosine"):
     arra2=np.asarray(array2)
     if metric=="cosine":
         simi_=cosine_similarity(arra1,arra2)
+    else if metric=="sigdot":
+        pass
+        
     else:
         simi=np.zeros((arra1.shape[0],arra2.shape[0]))
         for i,u in enumerate(array):
