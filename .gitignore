@@ -12,6 +12,7 @@
 
 bfg.jar
 .ipynb_checkpoints
+<<<<<<< HEAD
 *.pyc
 tsnefig/
 Models/
@@ -36,3 +37,12 @@ tsnefig/
 Models/
 Model/
 __pycache__/
+=======
+tsnefig/
+Models/
+logs/
+*.h5
+*.hdf5
+*.png
+*.csv
+>>>>>>> ModelTraining
