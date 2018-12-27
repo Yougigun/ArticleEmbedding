@@ -1,11 +1,12 @@
 
 # coding: utf-8
 
-# In[1]:
+# In[10]:
 
 
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
+import re 
 
 
 # In[2]:
@@ -35,7 +36,7 @@ def MeanSimilaritytwoindustry(array1,array2,metric="cosine"):
     arra2=np.asarray(array2)
     if metric=="cosine":
         simi_=cosine_similarity(arra1,arra2)
-    else if metric=="sigdot":
+    elif metric=="sigdot":
         pass
         
     else:
@@ -46,7 +47,7 @@ def MeanSimilaritytwoindustry(array1,array2,metric="cosine"):
     return np.mean(simi_)
 
 
-# In[ ]:
+# In[8]:
 
 
 #clean token
@@ -64,4 +65,20 @@ def CleanToken(string):
     string=re.sub("^ ","",string)#space at beginning
     string=re.sub(" $","",string)#space at end
     return string
+
+
+# In[ ]:
+
+
+def MakeMatrixTSEN(dict_collect_industry,Data):
+    feature_x_index=[]
+    target_y=[]
+    for k in dict_collect_industry:
+        newslist=list(dict_collect_industry[k])
+        num=len(newslist)
+        feature_x_index+=newslist
+        _=[k]*num
+        target_y+=_
+    feature_x=Data[feature_x_index]
+    return feature_x,target_y
 

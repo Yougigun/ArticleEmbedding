@@ -1,8 +1,10 @@
 
 # coding: utf-8
 
-# In[162]:
+# In[52]:
 
+
+from ArticlesRep import MeanSimilarityoneindustry,MeanSimilaritytwoindustry,CleanToken #common function
 
 import pandas as pd
 
@@ -226,7 +228,7 @@ DataSet["title_token_plus_body_token"]=DataSet["title_token_plus_body_token"].pr
 DataSet=DataSet[["guid","title_token_plus_body_token","indusrty_tags"]]
 
 
-# ## Save DataSet
+# #### Save DataSet
 
 # In[182]:
 
@@ -234,4 +236,128 @@ DataSet=DataSet[["guid","title_token_plus_body_token","indusrty_tags"]]
 # # DataSet.reset_index(drop=True,inplace=True)
 # with open("D:3.AutoencoderForArticle/DataSet_vip_single_industry","wb") as f:
 #     pickle.dump(file=f,obj=DataSet)
+
+
+# # Build DataSet for Mutiple industry News
+
+# #### Load Vip NEWS with industrytag
+
+# In[2]:
+
+
+with open("D:News_vip_with_industrytag","rb") as f:
+    News_vip_with_industrytag=pickle.load(f)
+
+
+# In[4]:
+
+
+News_vip_with_industrytag.info()
+
+
+# #### Drop Atricles without Industry tags
+
+# In[8]:
+
+
+pick=News_vip_with_industrytag["indusrty_tags"]!=set()
+News_vip_with_at_least_one_industrytag=News_vip_with_industrytag[pick].reset_index()
+News_vip_with_at_least_one_industrytag["indusrty_tags"]
+
+
+# In[14]:
+
+
+# Pick up the news only involves one news and retain ["guid","title_token","body_token","indusrty_tags"] columns
+_ = News_vip_with_at_least_one_industrytag["indusrty_tags"]
+pick=_.progress_apply(lambda x : True if len(x)>1 else False)
+
+DataSet=News_vip_with_at_least_one_industrytag[pick][["guid","title_token","body_token","indusrty_tags"]]
+DataSet.reset_index(drop=True,inplace=True) #Reset index form 0 to ~
+DataSet.head(10)
+
+
+# #### Statistics
+
+# In[19]:
+
+
+DataSet["indusrty_tags"].progress_apply(lambda x : str(x)).value_counts().sort_values(ascending=False)
+
+
+# ##### Merge Title and body token
+
+# In[40]:
+
+
+DataSet["title_token_plus_body_token"]=DataSet["title_token"]+" "+DataSet["body_token"]
+DataSet["title_token_plus_body_token"][12500]
+
+
+# In[56]:
+
+
+#clean token
+def CleanToken(string):
+    pattern=[re.compile("[\)》\，\.\、\-\%\《\(\"\'\％\」\「\。\（\）\；\● ]"),
+         re.compile("\d\d%"),##EX: 85%
+         re.compile("\d+"),##EX:9,10,123..
+         re.compile(" [a-zA-Z] "),##EX: x , d ,...
+#          re.compile("[a-zA-Z]"),
+        ]
+# string=trainset_vip["Title_and_body"][7000]
+    for p in pattern:
+        string=p.sub(" ",string)
+    string=re.sub("  +"," ",string)# two or above space to one space
+    string=re.sub("^ ","",string)#space at beginning
+    string=re.sub(" $","",string)#space at end
+    return string
+DataSet["title_token_plus_body_token"]=DataSet["title_token_plus_body_token"].progress_apply(CleanToken)
+
+
+# In[59]:
+
+
+# pick some columns ["guid","title_token_plus_body_token","indusrty_tags"]
+DataSet=DataSet[["guid","title_token_plus_body_token","indusrty_tags"]]
+DataSet.head(5)
+
+
+# In[64]:
+
+
+DataSet.index.is_unique
+
+
+# #### Save DataSet
+
+# In[65]:
+
+
+# with open("D:3.AutoencoderForArticle/DataSet_vip_multi_industry","wb") as f:
+#     pickle.dump(file=f,obj=DataSet)
+
+
+# #### Save dict_multi_industry
+
+# In[114]:
+
+
+dict_multi_industry=dict()
+for i,t in tqdm_notebook(DataSet.iterrows()):
+    if repr(t["indusrty_tags"]) not in dict_multi_industry:dict_multi_industry[repr(t["indusrty_tags"])]=[i]
+    else :dict_multi_industry[repr(t["indusrty_tags"])].append(i)
+
+
+# In[118]:
+
+
+# with open("D:3.AutoencoderForArticle/dict_multi_industry","wb") as f:
+#     pickle.dump(file=f,obj=dict_multi_industry)
+
+
+# In[119]:
+
+
+dict_multi_industry
 

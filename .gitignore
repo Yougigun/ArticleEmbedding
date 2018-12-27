@@ -46,3 +46,7 @@ logs/
 *.png
 *.csv
 >>>>>>> ModelTraining
+tensorflow-internals.pdf
+Mobile log.py
+intermediates_tsne_cosine_test.npy
+Untitled1.ipynb
