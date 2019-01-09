@@ -4,3 +4,12 @@ tensorflow-internals.pdf
 2.industrymiddleindustry/Slide/MediIndustry.pptx
 2.industrymiddleindustry/.ipynb_checkpoints/1.Map News to Industry -checkpoint.ipynb
 2.industrymiddleindustry/.ipynb_checkpoints/2.Cleaning&Tokenization-checkpoint.ipynb
+
+2.industrymiddleindustry/.ipynb_checkpoints/3.Build Vocabulary Dictionary-checkpoint.ipynb
+2.industrymiddleindustry/.ipynb_checkpoints/4.Vectorization & Industry Dictionary -checkpoint.ipynb
+2.industrymiddleindustry/.ipynb_checkpoints/5.BuildDataset & Dataloader-checkpoint.ipynb
+2.industrymiddleindustry/.ipynb_checkpoints/6.Model-checkpoint.ipynb
+2.industrymiddleindustry/.ipynb_checkpoints/7.Training-checkpoint.ipynb
+2.industrymiddleindustry/.ipynb_checkpoints/SampleCode-checkpoint.ipynb
+2.industrymiddleindustry/__pycache__/BuildDataset.cpython-35.pyc
+2.industrymiddleindustry/__pycache__/Model.cpython-35.pyc
