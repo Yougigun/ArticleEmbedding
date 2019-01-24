@@ -102,3 +102,30 @@ class DecoderOneLayer(torch.nn.Module):
         x=self.sigmoid(x)
         return x
 
+
+# In[ ]:
+
+
+class EncoderOneLayerBN(torch.nn.Module):
+    def __init__(self,in_features,embedding_features):
+        super(EncoderOneLayerBN,self).__init__()
+        self.linear1=torch.nn.Linear(in_features,embedding_features)
+        self.BN=torch.nn.BatchNorm1d(embedding_features,momentum=0.015)
+        self.sigmoid=torch.nn.Sigmoid()
+        self.p=torch.rand(in_features)
+        self.register_buffer('p_const', self.p)
+    def forward(self,x):
+        if self.training:
+            x=x*(1-torch.rand_like(x,requires_grad=False))
+        else:
+            x=x*(1-self.p_const)
+        ##Layer1
+        x=self.linear1(x)
+        x=self.BN(x)
+        x=self.sigmoid(x)
+        ## Calibration
+        fb=self.sigmoid(self.linear1.bias)
+        x=x-fb
+        
+        return x
+
