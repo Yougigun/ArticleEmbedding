@@ -114,7 +114,14 @@ class DataPreprocess():
                                             batch[ind]["Data"]["SessReprz"]
                                             ).to(device=device),
                 "Click":batch[ind]["Data"]["Session"]["Click"],
-                "Unclick":batch[ind]["Data"]["Session"]["Unclick"]}
+                "Unclick":batch[ind]["Data"]["Session"]["Unclick"],
+                 "Date":batch[ind]["Date"],
+                  "User":batch[ind]["User"],
+                  "PosInList":batch[ind]["PosInList"],
+                  "Log":batch[ind]["Data"]["Log"],
+                  "List":batch[ind]["Data"]["Session"]["List"],
+                  
+                 }
                 for ind in logLengthArgSort  ]
     @classmethod
     def batchProcess(cls,batch,device="cpu"):
